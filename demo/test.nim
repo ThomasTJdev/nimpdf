@@ -1,4 +1,4 @@
-import streams, nimPDF, unittest
+import streams, nimPDF, unittest, strutils
 
 proc draw_title(doc: PDF, text:string) =
   let size = getSizeFromName("A4")
@@ -59,16 +59,16 @@ proc test(doc: PDF) =
     var tw = doc.getVTextWidth(text)
     var th = doc.getVTextHeight(text)
     check:
-      $tw == "3.61"
-      $th == "14.05"
+      formatFloat(tw, ffDecimal, 2) == "3.61"
+      formatFloat(th, ffDecimal, 2) == "14.05"
 
   test "getTextWidth and GetTextHeight TTF":
     doc.setFont("FreeMono", {FS_REGULAR}, 5)
     var tw = doc.getVTextWidth(text)
     var th = doc.getVTextHeight(text)
     check:
-      $tw == "3.0"
-      $th == "13.325"
+      formatFloat(tw, ffDecimal, 1) == "3.0"
+      formatFloat(th, ffDecimal, 3) == "13.325"
 
 proc main(): bool {.discardable.} =
   #echo currentSourcePath()

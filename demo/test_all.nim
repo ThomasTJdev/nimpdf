@@ -9,4 +9,5 @@ import
   link_annot,
   pagelabels,
   test,
-  text_annot
+  text_annot,
+  embed_fonts

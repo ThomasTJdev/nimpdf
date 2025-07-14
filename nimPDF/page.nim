@@ -439,8 +439,9 @@ proc newDocState*(opts: PDFOptions): DocState =
   result.setInfo(DI_PRODUCER, "nimPDF")
   result.setFontCount = 0
 
-proc makeFont*(doc: DocState, family: string, style: FontStyles, enc: EncodingType = ENC_STANDARD): Font =
-  result = doc.fontMan.makeFont(family, style, enc)
+proc makeFont*(doc: DocState, family: string, style: FontStyles, enc: EncodingType = ENC_STANDARD, embedFont: bool = false): Font =
+  let finalEmbedFont = doc.opts.getEmbedFont() or embedFont
+  result = doc.fontMan.makeFont(family, style, enc, finalEmbedFont)
 
 proc getOpt*(doc: DocState): PDFOptions =
   result = doc.opts
@@ -679,19 +680,27 @@ template fromUser(self: ContentBase, val: float64): float64 =
 template toUser(self: ContentBase, val: float64): float64 =
   self.state.gState.docUnit.toUser(val)
 
-proc setFont*(self: ContentBase, family: string, style: FontStyles, size: float64, enc: EncodingType = ENC_STANDARD) =
-  var font = self.state.fontMan.makeFont(family, style, enc)
-  let fontNumber = font.ID
+proc setFont*(
+    self: ContentBase,
+    family: string,
+    style: FontStyles,
+    size: float64,
+    enc: EncodingType = ENC_STANDARD,
+    embedFont: bool = false,
+) =
+  var font = self.state.makeFont(family, style, enc, embedFont)
   let fontSize = self.fromUser(size)
-  self.put("BT /F",$fontNumber," ",$fontSize," Tf ET")
+
   self.state.gState.font = font
   self.state.gState.fontSize = fontSize
   inc(self.state.setFontCount)
 
-proc setFont*(self: ContentBase, family: string, size: float64 = 5.0) =
-  self.setFont(family, {FS_REGULAR}, size)
+proc setFont*(
+    self: ContentBase, family: string, size: float64 = 5.0, embedFont: bool = false
+) =
+  self.setFont(family, {FS_REGULAR}, size, ENC_STANDARD, embedFont)
 
-proc drawText*(self: ContentBase; x,y: float64; text: string) =
+proc drawText*(self: ContentBase, x, y: float64, text: string) =
   let xx = self.fromUser(x)
   let yy = self.state.vPoint(y)
 
@@ -702,9 +711,18 @@ proc drawText*(self: ContentBase; x,y: float64; text: string) =
 
   if font.subType == FT_TRUETYPE:
     var utf8 = replace_invalid(text)
-    self.put("BT ",f2s(xx)," ",f2s(yy)," Td <",font.EscapeString(utf8, self.state.opts.getEmbedFont()),"> Tj ET")
+    let escapedString = font.EscapeString(utf8, false)
+    let pdfContent =
+      "BT /F" & $font.ID & " " & f2s(self.state.gState.fontSize) & " Tf " & f2s(xx) & " " &
+      f2s(yy) & " Td <" & escapedString & "> Tj ET"
+
+    self.put(pdfContent)
   else:
-    self.put("BT ",f2s(xx)," ",f2s(yy)," Td (",escapeString(text),") Tj ET")
+    let pdfContent =
+      "BT /F" & $font.ID & " " & f2s(self.state.gState.fontSize) & " Tf " & f2s(xx) & " " &
+      f2s(yy) & " Td (" & escapeString(text) & ") Tj ET"
+
+    self.put(pdfContent)
 
 proc drawVText*(self: ContentBase; x,y: float64; text: string) =
   if self.state.gState.font == nil or self.state.setFontCount == 0:
@@ -722,6 +740,7 @@ proc drawVText*(self: ContentBase; x,y: float64; text: string) =
   let cid = font.EscapeString(utf8, self.state.opts.getEmbedFont())
 
   self.put("BT")
+  self.put("/F", $font.ID, " ", f2s(self.state.gState.fontSize), " Tf")
   var i = 0
   for b in runes(utf8):
     self.put(f2s(xx)," ",f2s(yy)," Td <", substr(cid, i, i + 3),"> Tj")

@@ -160,13 +160,22 @@ proc prevPage*(doc: PDF, curPageNr = doc.currentPage()) =
   if (curPageNr - 2) >= 0:
     doc.curPage = doc.pages[curPageNr - 2]
 
-proc setFont*(doc: PDF, family: string, style: FontStyles, size: float64, enc: EncodingType = ENC_STANDARD) =
+proc setFont*(
+    doc: PDF,
+    family: string,
+    style: FontStyles,
+    size: float64,
+    enc: EncodingType = ENC_STANDARD,
+    embedFont: bool = false,
+) =
   assert(doc.curPage != nil)
-  doc.curPage.setFont(family, style, size, enc)
+  doc.curPage.setFont(family, style, size, enc, embedFont)
 
-proc setFont*(doc: PDF, family: string, size: float64 = 5.0) =
+proc setFont*(doc: PDF, family: string, size: float64 = 5.0, embedFont: bool = false) =
   assert(doc.curPage != nil)
-  doc.curPage.setFont(family, size)
+  doc.curPage.setFont(family, size, embedFont)
+
+
 
 proc drawText*(doc: PDF; x,y: float64; text: string) =
   assert(doc.curPage != nil)

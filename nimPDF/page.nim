@@ -231,7 +231,7 @@ proc putResources(doc: DocState): DictObj =
   let grads = putGradients(doc.xref, doc.gradients)
   let exts  = putExtGStates(doc.xref, doc.ExtGStates)
   let imgs  = putImages(doc.xref, doc.images)
-  let fonts = putFonts(doc.xref, doc.fontMan.fontList, doc.opts.getEmbedFont())
+  let fonts = putFonts(doc.xref, doc.fontMan.fontList)
 
   result = newDictObj()
   doc.xref.add(result)

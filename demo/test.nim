@@ -20,10 +20,10 @@ proc createPDF(doc: PDF) =
   doc.addPage(size, PGO_PORTRAIT)
   draw_title(doc, "TRUE TYPE FONT DEMO")
 
-  doc.setFont("Eunjin", {FS_REGULAR}, 10)
+  doc.setFont("Eunjin", {FS_REGULAR}, 10, ENC_UTF8, embedFont = true)
   doc.drawText(15, 50, "헬로우 월드")
 
-  doc.setFont("KaiTi", {FS_REGULAR}, 10)
+  doc.setFont("KaiTi", {FS_REGULAR}, 10, ENC_UTF8)
   doc.drawText(15, 70, "你好世界")
 
   doc.setFont("Calligrapher", {FS_REGULAR}, 10)
@@ -78,8 +78,8 @@ proc main(): bool {.discardable.} =
   if file != nil:
     var doc = newPDF()
     doc.createPDF()
-    doc.writePDF(file)
     doc.test()
+    doc.writePDF(file)
     file.close()
     echo "OK"
     return true

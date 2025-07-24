@@ -484,7 +484,28 @@ proc makeFont*(
   var searchName = family
   searchName.add(searchStyle)
 
-  var res = searchFrom(ff.baseFont, searchName)
+  # First check if font already exists in fontList
+  var res = searchFrom(ff.fontList, searchName)
+  if res != nil:
+    return res
+
+  # Search TrueType fonts first (preferred over Base14)
+  res = searchFromTTList(ff, searchName)
+  if res != nil:
+    res.ID = ff.fontList.len + 1
+    res.embedFont = embedFont
+    ff.fontList.add(res)
+    return res
+
+  res = searchFromttcList(ff, searchName)
+  if res != nil:
+    res.ID = ff.fontList.len + 1
+    res.embedFont = embedFont
+    ff.fontList.add(res)
+    return res
+
+  # Fallback to Base14 fonts only if TrueType not found
+  res = searchFrom(ff.baseFont, searchName)
   if res != nil:
     var encoding = ENC_STANDARD
     if enc in {ENC_STANDARD, ENC_MACROMAN, ENC_WINANSI}:
@@ -505,29 +526,11 @@ proc makeFont*(
       fon14.encode = enc_win_map
 
     fon14.ID = ff.fontList.len + 1
-    fon14.embedFont = false # Base14 fonts don't support embedding
+    fon14.embedFont = true # Base14 fonts must always use normal font referencing
     ff.fontList.add(fon14)
     return fon14
 
-  res = searchFrom(ff.fontList, searchName)
-  if res != nil:
-    return res
-
-  res = searchFromTTList(ff, searchName)
-  if res != nil:
-    res.ID = ff.fontList.len + 1
-    res.embedFont = embedFont
-    ff.fontList.add(res)
-    return res
-
-  res = searchFromttcList(ff, searchName)
-  if res != nil:
-    res.ID = ff.fontList.len + 1
-    res.embedFont = embedFont
-    ff.fontList.add(res)
-    return res
-
-  result = makeFont(ff, defaultFont, style, enc, embedFont)
+  result = nil
 
 when isMainModule:
   var ff: FontManager

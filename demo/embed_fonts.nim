@@ -4,7 +4,7 @@ proc draw_title(doc: PDF, text: string) =
   let size = getSizeFromName("A4")
 
   # Embed this specific font for better text copying
-  doc.setFont("KaiTi", {FS_BOLD}, 5, ENC_STANDARD, embedFont = true)
+  doc.setFont("KaiTi", {FS_REGULAR}, 5, ENC_STANDARD, embedFont = true)
   let tw = doc.getTextWidth(text)
   let x = size.width.toMM / 2 - tw / 2
 

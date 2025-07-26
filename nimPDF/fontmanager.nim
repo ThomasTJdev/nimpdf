@@ -17,6 +17,8 @@ import "subsetter/Font", "subsetter/CMAPTable", "subsetter/HEADTable"
 import "subsetter/HMTXTable", "subsetter/FontData", "subsetter/VMTXTable"
 import "subsetter/GLYPHTable"
 
+export Font
+
 const
   defaultFont = "Times"
 
@@ -174,47 +176,27 @@ method EscapeString*(f: Base14, text: string, embedFont: bool = false): string =
   result = text
 
 proc EscapeStringAndEmbedFullFont*(f: TTFont, text: string): string =
-  # Use the cached full character mapping from FontDef
-  if f.font.fullCharMap.len > 0:
-    f.CH2GID = f.font.fullCharMap
-  else:
-    # Initialize the cache if not already done
+  # For font embedding, use a reasonable character set for good copy/paste support
+  # Include ASCII range + Latin-1 supplement, but not all Unicode to avoid bloat
+  if f.font.fullCharMap.len == 0:
     var encodingcmap = f.cmap
     if encodingcmap != nil:
-      # Add all possible Unicode characters (0 to 0xFFFF)
-      for charCode in 0..0xFFFF:
+      # Map ASCII range (0-127) + Latin-1 supplement (128-255) for good coverage
+      # This gives good copy/paste support without excessive file size
+      for charCode in 0 .. 255:
         let oldGID = encodingcmap.GlyphIndex(charCode)
         if oldGID != 0:
-          f.CH2GID[charCode] = (oldGID, oldGID)  # Keep original GID mapping
-      # Store the cache in FontDef for future use
+          f.CH2GID[charCode] = (oldGID, oldGID)
+      # Store in cache to avoid recomputing
       f.font.fullCharMap = f.CH2GID
 
-  result = ""
-  for c in runes(text):
-    let charCode = int(c)
-    if f.CH2GID.hasKey(charCode):
-      let gid = f.CH2GID[charCode].newGID
-      result.add(toHex(gid, 4))
-    else:
-      # If character not found, try to map it
-      let oldGID = f.cmap.GlyphIndex(charCode)
-      if oldGID != 0:
-        f.CH2GID[charCode] = (oldGID, oldGID)
-        result.add(toHex(oldGID, 4))
-      else:
-        result.add("0000")  # Missing glyph
-
-method EscapeString*(f: TTFont, text: string, embedFont: bool = false): string =
-  if embedFont:
-    return f.EscapeStringAndEmbedFullFont(text)
-
+  # Also ensure all characters in the current text are mapped
   for c in runes(text):
     let charCode = int(c)
     if not f.CH2GID.hasKey(charCode):
       let oldGID = f.cmap.GlyphIndex(charCode)
       if oldGID != 0:
-        f.CH2GID[charCode] = (oldGID, f.newGID)
-        inc(f.newGID)
+        f.CH2GID[charCode] = (oldGID, oldGID)
 
   result = ""
   for c in runes(text):
@@ -223,7 +205,18 @@ method EscapeString*(f: TTFont, text: string, embedFont: bool = false): string =
       let gid = f.CH2GID[charCode].newGID
       result.add(toHex(gid, 4))
     else:
-      result.add("0000")
+      result.add("0000") # Missing glyph
+
+method EscapeString*(f: TTFont, text: string, embedFont: bool = false): string =
+  let shouldEmbed = embedFont or f.embedFont
+  if shouldEmbed:
+    return f.EscapeStringAndEmbedFullFont(text)
+
+  # For non-embedded TTF fonts, convert each character to hex using character codes
+  result = ""
+  for c in text:
+    let charCode = ord(c)
+    result.add(toHex(charCode, 2))
 
 method GetTextWidth*(f: Font, text: string): TextWidth {.base.} =
   discard
@@ -475,49 +468,69 @@ proc clone(src: Base14): Base14 =
   result.encoding = src.encoding
   result.encode = src.encode
 
-proc makeFont*(ff: var FontManager, family:string = "Times", style:FontStyles = {FS_REGULAR}, enc: EncodingType): Font =
+proc makeFont*(
+    ff: var FontManager,
+    family: string = "Times",
+    style: FontStyles = {FS_REGULAR},
+    enc: EncodingType,
+    embedFont: bool = false,
+): Font =
   var searchStyle = "00"
-  if FS_BOLD in style: searchStyle[0] = '1'
-  if FS_ITALIC in style: searchStyle[1] = '1'
+  if FS_BOLD in style:
+    searchStyle[0] = '1'
+  if FS_ITALIC in style:
+    searchStyle[1] = '1'
 
   var searchName = family
   searchName.add(searchStyle)
 
-  var res = searchFrom(ff.baseFont, searchName)
+  # First check if font already exists in fontList
+  var res = searchFrom(ff.fontList, searchName)
   if res != nil:
-    var encoding = ENC_STANDARD
-    if enc in {ENC_STANDARD, ENC_MACROMAN, ENC_WINANSI}: encoding = enc
-    var fon = searchFrom(ff.fontList, searchName & $int(enc))
-    if fon != nil: return fon
+    return res
 
-    var fon14 = clone(Base14(res))
-    fon14.searchName = fon14.searchName & $int(enc)
-    fon14.encoding = encoding
-
-    if encoding == ENC_STANDARD: fon14.encode = enc_std_map
-    elif encoding == ENC_MACROMAN: fon14.encode = enc_mac_map
-    elif encoding == ENC_WINANSI: fon14.encode = enc_win_map
-
-    fon14.ID = ff.fontList.len + 1
-    ff.fontList.add(fon14)
-    return fon14
-
-  res = searchFrom(ff.fontList, searchName)
-  if res != nil: return res
-
+  # Search TrueType fonts first (preferred over Base14)
   res = searchFromTTList(ff, searchName)
   if res != nil:
     res.ID = ff.fontList.len + 1
+    res.embedFont = embedFont
     ff.fontList.add(res)
     return res
 
   res = searchFromttcList(ff, searchName)
   if res != nil:
     res.ID = ff.fontList.len + 1
+    res.embedFont = embedFont
     ff.fontList.add(res)
     return res
 
-  result = makeFont(ff, defaultFont, style, enc)
+  # Fallback to Base14 fonts only if TrueType not found
+  res = searchFrom(ff.baseFont, searchName)
+  if res != nil:
+    var encoding = ENC_STANDARD
+    if enc in {ENC_STANDARD, ENC_MACROMAN, ENC_WINANSI}:
+      encoding = enc
+    var fon = searchFrom(ff.fontList, searchName & $int(enc))
+    if fon != nil:
+      return fon
+
+    var fon14 = clone(Base14(res))
+    fon14.searchName = fon14.searchName & $int(enc)
+    fon14.encoding = encoding
+
+    if encoding == ENC_STANDARD:
+      fon14.encode = enc_std_map
+    elif encoding == ENC_MACROMAN:
+      fon14.encode = enc_mac_map
+    elif encoding == ENC_WINANSI:
+      fon14.encode = enc_win_map
+
+    fon14.ID = ff.fontList.len + 1
+    fon14.embedFont = true # Base14 fonts must always use normal font referencing
+    ff.fontList.add(fon14)
+    return fon14
+
+  result = nil
 
 when isMainModule:
   var ff: FontManager

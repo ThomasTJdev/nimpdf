@@ -1,4 +1,4 @@
-import streams, nimPDF, unittest
+import streams, nimPDF, unittest, strutils
 
 proc draw_title(doc: PDF, text:string) =
   let size = getSizeFromName("A4")
@@ -20,10 +20,10 @@ proc createPDF(doc: PDF) =
   doc.addPage(size, PGO_PORTRAIT)
   draw_title(doc, "TRUE TYPE FONT DEMO")
 
-  doc.setFont("Eunjin", {FS_REGULAR}, 10)
+  doc.setFont("Eunjin", {FS_REGULAR}, 10, ENC_UTF8, embedFont = true)
   doc.drawText(15, 50, "헬로우 월드")
 
-  doc.setFont("KaiTi", {FS_REGULAR}, 10)
+  doc.setFont("KaiTi", {FS_REGULAR}, 10, ENC_UTF8)
   doc.drawText(15, 70, "你好世界")
 
   doc.setFont("Calligrapher", {FS_REGULAR}, 10)
@@ -59,16 +59,16 @@ proc test(doc: PDF) =
     var tw = doc.getVTextWidth(text)
     var th = doc.getVTextHeight(text)
     check:
-      $tw == "3.61"
-      $th == "14.05"
+      formatFloat(tw, ffDecimal, 2) == "3.61"
+      formatFloat(th, ffDecimal, 2) == "14.05"
 
   test "getTextWidth and GetTextHeight TTF":
     doc.setFont("FreeMono", {FS_REGULAR}, 5)
     var tw = doc.getVTextWidth(text)
     var th = doc.getVTextHeight(text)
     check:
-      $tw == "3.0"
-      $th == "13.325"
+      formatFloat(tw, ffDecimal, 1) == "3.0"
+      formatFloat(th, ffDecimal, 3) == "13.325"
 
 proc main(): bool {.discardable.} =
   #echo currentSourcePath()
@@ -78,8 +78,8 @@ proc main(): bool {.discardable.} =
   if file != nil:
     var doc = newPDF()
     doc.createPDF()
-    doc.writePDF(file)
     doc.test()
+    doc.writePDF(file)
     file.close()
     echo "OK"
     return true

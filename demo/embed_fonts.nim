@@ -1,16 +1,17 @@
 import streams, nimPDF, unittest
 
-proc draw_title(doc: PDF, text:string) =
+proc draw_title(doc: PDF, text: string) =
   let size = getSizeFromName("A4")
 
-  doc.setFont("KaiTi", {FS_BOLD}, 5)#, embedFont = true)
+  # Embed this specific font for better text copying
+  doc.setFont("KaiTi", {FS_REGULAR}, 5, ENC_STANDARD, embedFont = true)
   let tw = doc.getTextWidth(text)
-  let x = size.width.toMM/2 - tw/2
+  let x = size.width.toMM / 2 - tw / 2
 
-  doc.setFillColor(0,0,0)
+  doc.setFillColor(0, 0, 0)
   doc.drawText(x, 10.0, text)
-  doc.setStrokeColor(0,0,0)
-  doc.drawRect(10,15,size.width.toMM - 20, size.height.toMM-25)
+  doc.setStrokeColor(0, 0, 0)
+  doc.drawRect(10, 15, size.width.toMM - 20, size.height.toMM - 25)
   doc.stroke()
 
 proc createPDF(doc: PDF) =
@@ -18,24 +19,35 @@ proc createPDF(doc: PDF) =
   let SAMP_TEXT = "The Quick Brown Fox Jump Over The Lazy Dog"
 
   doc.addPage(size, PGO_PORTRAIT)
-  draw_title(doc, "TRUE TYPE FONT DEMO")
+  draw_title(doc, "PER-FONT EMBEDDING DEMO")
 
-  doc.setFont("Calligrapher", {FS_REGULAR}, 10)#, embedFont = false)
-  doc.drawText(15, 30, "Calligrapher")
+  # Example 1: Font with individual embedding enabled
+  doc.setFont("Calligrapher", {FS_REGULAR}, 10, ENC_STANDARD, embedFont = true)
+  doc.drawText(15, 30, "Calligrapher - embedded=true")
 
-  doc.setFont("Eunjin", {FS_REGULAR}, 10)#, embedFont = false)
-  doc.drawText(15, 50, "Eunjin")
+  # Example 2: Font without individual embedding
+  doc.setFont("Eunjin", {FS_REGULAR}, 10, ENC_STANDARD, embedFont = false)
+  doc.drawText(15, 50, "Eunjin - embedded=false")
 
-  doc.setFont("KaiTi", {FS_REGULAR}, 10)#, embedFont = false)
-  doc.drawText(15, 70, "KaiTi")
+  # Example 3: Using convenience method with embedding
+  doc.setFont("KaiTi", 10, embedFont = true)
+  doc.drawText(15, 70, "KaiTi - convenience method")
 
-  doc.setFont("Calligrapher", {FS_REGULAR}, 4)#, embedFont = false)
-  doc.drawText(15, 90, SAMP_TEXT)
+  # Example 4: Small text with embedding
+  doc.setFont("Calligrapher", {FS_REGULAR}, 8, ENC_STANDARD, embedFont = true)
+  doc.drawText(15, 90, "Sample text with smaller embedded font")
 
-  doc.setInfo(DI_TITLE, "TTF DEMO")
+  # Example 5: Base14 font (embedding flag ignored)
+  doc.setFont("Times", {FS_REGULAR}, 10, ENC_STANDARD, embedFont = true)
+  doc.drawText(15, 110, "Times - Base14 ignores flag")
+
+  # Example 6: Show global override behavior
+  doc.setFont("Helvetica", {FS_REGULAR}, 8, ENC_STANDARD, embedFont = false)
+  doc.drawText(15, 130, "Note: Global flag overrides individual settings")
+
+  doc.setInfo(DI_TITLE, "Per-Font Embedding Demo")
   doc.setInfo(DI_AUTHOR, "Andri Lim")
-  doc.setInfo(DI_SUBJECT, "TTF Font Demo")
-
+  doc.setInfo(DI_SUBJECT, "Demonstrating individual font embedding")
 
 proc main(): bool {.discardable.} =
   #echo currentSourcePath()
@@ -45,12 +57,20 @@ proc main(): bool {.discardable.} =
   if file != nil:
     var opts = newPDFOptions()
     opts.addFontsPath("fonts")
-    opts.setEmbedFont(true)
+    # Set global embedding to false to demonstrate per-font control
+    opts.setEmbedFont(false)
+
+    echo "Creating PDF with per-font embedding demonstration..."
+    echo "- Some fonts will be embedded individually using embedFont parameter"
+    echo "- Global embedding is disabled to show individual font control"
+    echo "- Check text copying/pasting to verify embedding worked"
+
     var doc = newPDF(opts)
     doc.createPDF()
     doc.writePDF(file)
     file.close()
-    echo "OK"
+    echo "PDF created successfully: ", fileName
+    echo "Try copying text from different lines to see embedding effects"
     return true
 
   echo "cannot open: ", fileName

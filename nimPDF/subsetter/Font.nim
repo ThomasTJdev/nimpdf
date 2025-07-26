@@ -58,6 +58,7 @@ type
     ID*: int
     subType*: FontType
     searchName*: string
+    embedFont*: bool
 
   TONGIDCache* = tuple[oldGID, newGID: int]
   CH2GIDMAPCache* = OrderedTable[int, TONGIDCache]

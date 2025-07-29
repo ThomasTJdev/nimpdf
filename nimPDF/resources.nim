@@ -77,14 +77,14 @@ proc putBase14Fonts(xref: Pdfxref, font: Font): DictObj =
     elif fon.encoding == ENC_WINANSI: fn.addName("Encoding", "WinAnsiEncoding")
   result = fn
 
-proc putTrueTypeFonts(xref: Pdfxref, font: Font, seed: int, embedFont: bool): DictObj =
+proc putTrueTypeFonts(xref: Pdfxref, font: Font, seed: int, renderMode: FontRenderMode): DictObj =
   let fon = TTFont(font)
   let subsetTag  = makeSubsetTag(seed)
 
-  let widths   = fon.GenerateWidths(embedFont) #don't change this order
+  let widths   = fon.GenerateWidths(renderMode) #don't change this order
   let ranges   = fon.GenerateRanges() #cos they sort CH2GID differently
   let desc     = fon.GetDescriptor()
-  let buf      = fon.GetSubsetBuffer(subsetTag, embedFont)
+  let buf      = fon.GetSubsetBuffer(subsetTag, renderMode)
   let Length1  = buf.len
   let psName   = subsetTag & desc.postscriptName
 
@@ -161,7 +161,8 @@ proc putFonts*(xref: Pdfxref, fonts: seq[Font]): DictObj =
   var fn: DictObj
 
   for fon in fonts:
+    if fon.renderMode == frmPathRendering: continue
     if fon.subType == FT_BASE14: fn = xref.putBase14Fonts(fon)
-    if fon.subType == FT_TRUETYPE: fn = xref.putTrueTypeFonts(fon, seed, fon.embedFont)
+    if fon.subType == FT_TRUETYPE: fn = xref.putTrueTypeFonts(fon, seed, fon.renderMode)
     result.addElement("F" & $fon.ID, fn)
     inc(seed)

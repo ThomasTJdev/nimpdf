@@ -4,7 +4,7 @@ proc draw_title(doc: PDF, text: string) =
   let size = getSizeFromName("A4")
 
   # Embed this specific font for better text copying
-  doc.setFont("KaiTi", {FS_REGULAR}, 5, ENC_STANDARD, embedFont = true)
+  doc.setFont("KaiTi", {FS_REGULAR}, 5, ENC_STANDARD, renderMode = frmEmbed)
   let tw = doc.getTextWidth(text)
   let x = size.width.toMM / 2 - tw / 2
 
@@ -19,35 +19,39 @@ proc createPDF(doc: PDF) =
   let SAMP_TEXT = "The Quick Brown Fox Jump Over The Lazy Dog"
 
   doc.addPage(size, PGO_PORTRAIT)
-  draw_title(doc, "PER-FONT EMBEDDING DEMO")
+  draw_title(doc, "FONT RENDERING MODES DEMO")
 
   # Example 1: Font with individual embedding enabled
-  doc.setFont("Calligrapher", {FS_REGULAR}, 10, ENC_STANDARD, embedFont = true)
-  doc.drawText(15, 30, "Calligrapher - embedded=true")
+  doc.setFont("Calligrapher", {FS_REGULAR}, 10, ENC_STANDARD, renderMode = frmEmbed)
+  doc.drawText(15, 30, "Calligrapher - renderMode=frmEmbed")
 
   # Example 2: Font without individual embedding
-  doc.setFont("Eunjin", {FS_REGULAR}, 10, ENC_STANDARD, embedFont = false)
-  doc.drawText(15, 50, "Eunjin - embedded=false")
+  doc.setFont("Eunjin", {FS_REGULAR}, 10, ENC_STANDARD, renderMode = frmDefault)
+  doc.drawText(15, 50, "Eunjin - renderMode=frmDefault")
 
-  # Example 3: Using convenience method with embedding
-  doc.setFont("KaiTi", 10, embedFont = true)
-  doc.drawText(15, 70, "KaiTi - convenience method")
+  # Example 3: Path rendering (text drawn as vector paths)
+  doc.setFont("Eunjin", {FS_REGULAR}, 10, ENC_STANDARD, renderMode = frmPathRendering)
+  doc.drawText(15, 70, "Eunjin - renderMode=frmPathRendering (not selectable)")
 
-  # Example 4: Small text with embedding
-  doc.setFont("Calligrapher", {FS_REGULAR}, 8, ENC_STANDARD, embedFont = true)
-  doc.drawText(15, 90, "Sample text with smaller embedded font")
+  # Example 4: Using convenience method with embedding
+  doc.setFont("KaiTi", 10, renderMode = frmEmbed)
+  doc.drawText(15, 90, "KaiTi - convenience method")
 
-  # Example 5: Base14 font (embedding flag ignored)
-  doc.setFont("Times", {FS_REGULAR}, 10, ENC_STANDARD, embedFont = true)
-  doc.drawText(15, 110, "Times - Base14 ignores flag")
+  # Example 5: Small text with embedding
+  doc.setFont("Calligrapher", {FS_REGULAR}, 8, ENC_STANDARD, renderMode = frmEmbed)
+  doc.drawText(15, 110, "Sample text with smaller embedded font")
 
-  # Example 6: Show global override behavior
-  doc.setFont("Helvetica", {FS_REGULAR}, 8, ENC_STANDARD, embedFont = false)
-  doc.drawText(15, 130, "Note: Global flag overrides individual settings")
+  # Example 6: Base14 font (embedding flag ignored)
+  doc.setFont("Times", {FS_REGULAR}, 10, ENC_STANDARD, renderMode = frmEmbed)
+  doc.drawText(15, 130, "Times - Base14 ignores flag")
 
-  doc.setInfo(DI_TITLE, "Per-Font Embedding Demo")
+  # Example 7: Show global override behavior
+  doc.setFont("Helvetica", {FS_REGULAR}, 8, ENC_STANDARD, renderMode = frmDefault)
+  doc.drawText(15, 150, "Note: Global flag overrides individual settings")
+
+  doc.setInfo(DI_TITLE, "Font Rendering Modes Demo")
   doc.setInfo(DI_AUTHOR, "Andri Lim")
-  doc.setInfo(DI_SUBJECT, "Demonstrating individual font embedding")
+  doc.setInfo(DI_SUBJECT, "Demonstrating three font rendering modes: frmDefault, frmEmbed, frmPathRendering")
 
 proc main(): bool {.discardable.} =
   #echo currentSourcePath()
@@ -57,13 +61,16 @@ proc main(): bool {.discardable.} =
   if file != nil:
     var opts = newPDFOptions()
     opts.addFontsPath("fonts")
-    # Set global embedding to false to demonstrate per-font control
+    # Set global embedding to false to demonstrate renderMode control
+    # Global setting only affects frmDefault; frmEmbed and frmPathRendering are always honored
     opts.setEmbedFont(false)
 
-    echo "Creating PDF with per-font embedding demonstration..."
-    echo "- Some fonts will be embedded individually using embedFont parameter"
-    echo "- Global embedding is disabled to show individual font control"
-    echo "- Check text copying/pasting to verify embedding worked"
+    echo "Creating PDF with font rendering modes demonstration..."
+    echo "- frmDefault: Standard text rendering (affected by global embedFont setting)"
+    echo "- frmEmbed: Text rendering with font embedding (always embedded regardless of global)"
+    echo "- frmPathRendering: Text drawn as vector paths (not selectable, ignores global setting)"
+    echo "- Global embedFont=false, so frmDefault uses no embedding"
+    echo "- Check text copying/pasting to verify different behaviors"
 
     var doc = newPDF(opts)
     doc.createPDF()

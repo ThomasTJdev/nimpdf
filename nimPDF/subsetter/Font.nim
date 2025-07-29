@@ -54,11 +54,16 @@ type
   FontType* = enum
     FT_BASE14, FT_TRUETYPE
 
+  FontRenderMode* = enum
+    frmDefault       ## Do not embed font, render as text
+    frmEmbed         ## Embed font and render as text
+    frmPathRendering ## Draw glyphs as paths
+
   Font* = ref object of RootObj
     ID*: int
     subType*: FontType
     searchName*: string
-    embedFont*: bool
+    renderMode*: FontRenderMode
 
   TONGIDCache* = tuple[oldGID, newGID: int]
   CH2GIDMAPCache* = OrderedTable[int, TONGIDCache]

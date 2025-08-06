@@ -17,7 +17,7 @@ import "subsetter/Font", "subsetter/CMAPTable", "subsetter/HEADTable"
 import "subsetter/HMTXTable", "subsetter/FontData", "subsetter/VMTXTable"
 import "subsetter/GLYPHTable"
 
-export Font
+export Font, FontRenderMode
 
 const
   defaultFont = "Times"
@@ -76,10 +76,10 @@ proc GetCharHeight*(f: TTFont, gid: int): int =
   else:
     result = math.round(float(f.vmtx.advanceHeight(gid)) * f.scaleFactor).int
 
-proc GenerateWidths*(f: TTFont, embedFont: bool): string =
+proc GenerateWidths*(f: TTFont, renderMode: FontRenderMode): string =
   # Generates the /Widths array for the font descriptor.
   # The format depends on whether we are embedding the full font or a subset.
-  if embedFont:
+  if renderMode == frmEmbed:
     # When embedding the full font, use Format 1 for /W array: [ c [w1 ... wn] ... ]
     # Collect unique GIDs and their widths, sorted by GID.
     var gidWidths = initOrderedTable[int, int]() # Use OrderedTable to sort by GID
@@ -156,8 +156,8 @@ proc GetDescriptor*(f: TTFont): FontDescriptor =
   f.CH2GID.sort(proc(x,y: tuple[key: int, val: TONGID]):int = cmp(x.key, y.key) )
   result = f.font.newFontDescriptor(f.CH2GID)
 
-proc GetSubsetBuffer*(f: TTFont, subsetTag: string, embedFont: bool): string =
-  if embedFont:
+proc GetSubsetBuffer*(f: TTFont, subsetTag: string, renderMode: FontRenderMode): string =
+  if renderMode == frmEmbed:
     let fd = f.font.embedFullFont(subsetTag)
     result = fd.getInternalBuffer()
   else:
@@ -169,10 +169,10 @@ method CanWriteVertical*(f: Base14): bool = false
 method CanWriteVertical*(f: TTFont): bool =
   result = f.vmtx != nil
 
-method EscapeString*(f: Font, text: string, embedFont: bool = false): string {.base.} =
+method EscapeString*(f: Font, text: string, renderMode: FontRenderMode = frmDefault): string {.base.} =
   discard
 
-method EscapeString*(f: Base14, text: string, embedFont: bool = false): string =
+method EscapeString*(f: Base14, text: string, renderMode: FontRenderMode = frmDefault): string =
   result = text
 
 proc EscapeStringAndEmbedFullFont*(f: TTFont, text: string): string =
@@ -207,16 +207,28 @@ proc EscapeStringAndEmbedFullFont*(f: TTFont, text: string): string =
     else:
       result.add("0000") # Missing glyph
 
-method EscapeString*(f: TTFont, text: string, embedFont: bool = false): string =
-  let shouldEmbed = embedFont or f.embedFont
+method EscapeString*(f: TTFont, text: string, renderMode: FontRenderMode = frmDefault): string =
+  let shouldEmbed = (renderMode == frmEmbed) or (f.renderMode == frmEmbed)
   if shouldEmbed:
     return f.EscapeStringAndEmbedFullFont(text)
 
-  # For non-embedded TTF fonts, convert each character to hex using character codes
+  # Original logic for non-embedded fonts: build character-to-glyph mapping
+  for c in runes(text):
+    let charCode = int(c)
+    if not f.CH2GID.hasKey(charCode):
+      let oldGID = f.cmap.GlyphIndex(charCode)
+      if oldGID != 0:
+        f.CH2GID[charCode] = (oldGID, f.newGID)
+        inc(f.newGID)
+
   result = ""
-  for c in text:
-    let charCode = ord(c)
-    result.add(toHex(charCode, 2))
+  for c in runes(text):
+    let charCode = int(c)
+    if f.CH2GID.hasKey(charCode):
+      let gid = f.CH2GID[charCode].newGID
+      result.add(toHex(gid, 4))
+    else:
+      result.add("0000")
 
 method GetTextWidth*(f: Font, text: string): TextWidth {.base.} =
   discard
@@ -473,7 +485,7 @@ proc makeFont*(
     family: string = "Times",
     style: FontStyles = {FS_REGULAR},
     enc: EncodingType,
-    embedFont: bool = false,
+    renderMode: FontRenderMode = frmDefault,
 ): Font =
   var searchStyle = "00"
   if FS_BOLD in style:
@@ -493,14 +505,14 @@ proc makeFont*(
   res = searchFromTTList(ff, searchName)
   if res != nil:
     res.ID = ff.fontList.len + 1
-    res.embedFont = embedFont
+    res.renderMode = renderMode
     ff.fontList.add(res)
     return res
 
   res = searchFromttcList(ff, searchName)
   if res != nil:
     res.ID = ff.fontList.len + 1
-    res.embedFont = embedFont
+    res.renderMode = renderMode
     ff.fontList.add(res)
     return res
 
@@ -526,7 +538,7 @@ proc makeFont*(
       fon14.encode = enc_win_map
 
     fon14.ID = ff.fontList.len + 1
-    fon14.embedFont = true # Base14 fonts must always use normal font referencing
+    fon14.renderMode = frmDefault # Base14 fonts use standard text rendering
     ff.fontList.add(fon14)
     return fon14
 
@@ -534,16 +546,16 @@ proc makeFont*(
 
 when isMainModule:
   var ff: FontManager
-  ff.init()
+  ff.init(@[])
 
   for key, val in pairs(ff.ttFontList):
     echo key, ": ", val
 
-  var font = ff.makeFont("GoodDog", {FS_REGULAR})
+  var font = ff.makeFont("GoodDog", {FS_REGULAR}, ENC_STANDARD)
   if font == nil:
     echo "NULL"
   else:
     echo font.searchName
 
-  var times = ff.makeFont("GoodDogx", {FS_REGULAR})
+  var times = ff.makeFont("GoodDogx", {FS_REGULAR}, ENC_STANDARD)
   echo times.searchName

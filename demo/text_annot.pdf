@@ -1,33 +1,33 @@
 %PDF-1.7
 1 0 obj
-<</Parent 5 0 R/Resources 4 0 R/Contents 6 0 R/Annots[8 0 R]/MediaBox[0.0000 0.0000 595.2756 841.8898]/Type/Page>>
+<</Parent 5 0 R/Type/Page/Contents 6 0 R/MediaBox[0.0000 0.0000 595.2756 841.8898]/Resources 4 0 R/Annots[8 0 R]>>
 endobj
 2 0 obj
-<</Pages 5 0 R/Type/Catalog>>
+<</Type/Catalog/Pages 5 0 R>>
 endobj
 3 0 obj
-<</Subtype/Type1/Encoding/StandardEncoding/Type/Font/BaseFont/Times-Roman>>
+<</Subtype/Type1/Type/Font/Encoding/StandardEncoding/BaseFont/Times-Roman>>
 endobj
 4 0 obj
 <</Font<</F1 3 0 R>>>>
 endobj
 5 0 obj
-<</Count 1/Kids[1 0 R]/Type/Pages>>
+<</Type/Pages/Kids[1 0 R]/Count 1>>
 endobj
 6 0 obj
 <</Length 7 0 R/Filter[/FlateDecode]>>
 stream
-xÊ=@@ĞŞ)¾’&d7ÉÚ–a 7`Íø©Ü¿@ıŞàhgqŠ!ôQLÔ,ÃwL^},”sBR£^;o¨ÇûX/,å)üüçK¹ä
+xÁ;@PĞş­â–4!O"´cw<3>•ıÎ™ˆfU¨‰F—Á–Åu„÷2xkàj~¯ıÁV¾Rƒ7¦mv
 endstream
 endobj
 7 0 obj
-80
+70
 endobj
 8 0 obj
-<</Border[16 16 1]/Rect[42.5197 788.0315 70.8661 771.0236]/Subtype/Text/Contents(Hello\040There)/Type/Annot/BS <</W 0>>>>
+<</Rect[42.5197 788.0315 70.8661 771.0236]/Subtype/Text/Border[16 16 1]/Type/Annot/Contents(Hello\040There)/BS <</W 0>>>>
 endobj
 9 0 obj
-<</Producer(nimPDF)/CreationDate(D:20210123150747)>>
+<</Producer(nimPDF)/CreationDate(D:20250806141358)>>
 endobj
 xref
 0 10
@@ -38,11 +38,11 @@ xref
 0000000275 00000 n
 0000000313 00000 n
 0000000364 00000 n
-0000000517 00000 n
-0000000535 00000 n
-0000000672 00000 n
+0000000507 00000 n
+0000000525 00000 n
+0000000662 00000 n
 trailer
-<</Size 10/Info 9 0 R/Root 2 0 R>>
+<</Root 2 0 R/Info 9 0 R/Size 10>>
 startxref
-740
+730
 %%EOF

@@ -1,2 +1,21 @@
+# Compiled binaries
 *.exe
-nimble.paths
+
+# macOS system files
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Thumbnails
+._*
+
+# Build artifacts
+nimcache/
+nimcache*/
+*.o
+*.obj
+*.a
+*.lib
+*.so
+*.dll
+*.dylib

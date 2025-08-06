@@ -23,7 +23,7 @@ proc createPDF(doc: PDF) =
   doc.addPage(size, PGO_PORTRAIT)
   draw_title(doc, "TRUE TYPE FONT DEMO")
 
-  doc.setFont("Eunjin", {FS_REGULAR}, 10, ENC_UTF8, embedFont = true)
+  doc.setFont("Eunjin", {FS_REGULAR}, 10, ENC_UTF8, renderMode = frmEmbed)
   doc.drawText(15, 50, "헬로우 월드")
 
   doc.setFont("KaiTi", {FS_REGULAR}, 10, ENC_UTF8)

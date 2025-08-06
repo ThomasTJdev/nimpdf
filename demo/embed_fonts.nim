@@ -45,10 +45,6 @@ proc createPDF(doc: PDF) =
   doc.setFont("Times", {FS_REGULAR}, 10, ENC_STANDARD, renderMode = frmEmbed)
   doc.drawText(15, 130, "Times - Base14 ignores flag")
 
-  # Example 7: Show global override behavior
-  doc.setFont("Helvetica", {FS_REGULAR}, 8, ENC_STANDARD, renderMode = frmDefault)
-  doc.drawText(15, 150, "Note: Global flag overrides individual settings")
-
   doc.setInfo(DI_TITLE, "Font Rendering Modes Demo")
   doc.setInfo(DI_AUTHOR, "Andri Lim")
   doc.setInfo(DI_SUBJECT, "Demonstrating three font rendering modes: frmDefault, frmEmbed, frmPathRendering")
@@ -61,15 +57,11 @@ proc main(): bool {.discardable.} =
   if file != nil:
     var opts = newPDFOptions()
     opts.addFontsPath("fonts")
-    # Set global embedding to false to demonstrate renderMode control
-    # Global setting only affects frmDefault; frmEmbed and frmPathRendering are always honored
-    opts.setEmbedFont(false)
 
     echo "Creating PDF with font rendering modes demonstration..."
-    echo "- frmDefault: Standard text rendering (affected by global embedFont setting)"
-    echo "- frmEmbed: Text rendering with font embedding (always embedded regardless of global)"
-    echo "- frmPathRendering: Text drawn as vector paths (not selectable, ignores global setting)"
-    echo "- Global embedFont=false, so frmDefault uses no embedding"
+    echo "- frmDefault: Standard text rendering"
+    echo "- frmEmbed: Text rendering with font embedding"
+    echo "- frmPathRendering: Text drawn as vector paths (not selectable)"
     echo "- Check text copying/pasting to verify different behaviors"
 
     var doc = newPDF(opts)

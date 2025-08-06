@@ -463,7 +463,7 @@ proc makeFont*(doc: DocState, family: string, style: FontStyles, enc: EncodingTy
     of frmEmbed: 
       frmEmbed          # Always honor explicit embedding  
     of frmDefault: 
-      if doc.opts.getEmbedFont(): frmEmbed else: frmDefault  # Only apply global to default
+      frmDefault  # Use default rendering (no global embedding option)
   
   result = doc.fontMan.makeFont(family, style, enc, finalRenderMode)
 
@@ -1006,7 +1006,7 @@ proc drawVText*(self: ContentBase; x,y: float64; text: string) =
   var xx = self.fromUser(x)
   var yy = self.state.vPoint(y)
   let utf8 = replace_invalid(text)
-  let cid = font.EscapeString(utf8, if self.state.opts.getEmbedFont(): frmEmbed else: frmDefault)
+  let cid = font.EscapeString(utf8, frmDefault)
 
   self.put("BT")
   self.put("/F", $font.ID, " ", f2s(self.state.gState.fontSize), " Tf")
@@ -1050,7 +1050,7 @@ proc showText*(self: ContentBase, text:string) =
 
   if font.subType == FT_TRUETYPE:
     var utf8 = replace_invalid(text)
-    self.put("<",font.EscapeString(utf8, if self.state.opts.getEmbedFont(): frmEmbed else: frmDefault),"> Tj")
+    self.put("<",font.EscapeString(utf8, frmDefault),"> Tj")
   else:
     self.put("(",escapeString(text),") Tj")
 

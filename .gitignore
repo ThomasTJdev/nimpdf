@@ -1,5 +1,6 @@
 # Compiled binaries
 *.exe
+
 *
 *
 
@@ -27,3 +28,4 @@ nimcache*/
 *.so
 *.dll
 *.dylib
+

@@ -497,7 +497,7 @@ proc loadImage*(doc: DocState, fileName: string): Image =
   var imagePath = doc.opts.getImagesPath()
   for p in imagePath:
     let fName = p & DirSep & fileName
-    if existsFile(fName):
+    if fileExists(fName):
       let image = loadImage(fName)
       if image != nil: return image
   result = nil

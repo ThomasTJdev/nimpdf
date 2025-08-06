@@ -12,8 +12,6 @@
 # Thumbnails
 ._*
 
-# Generated PDF files in demo directory
-demo/*.pdf
 
 # Compiled Nim binaries
 *

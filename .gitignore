@@ -1,9 +1,6 @@
 # Compiled binaries
 *.exe
 
-*
-*
-
 # macOS system files
 .DS_Store
 .AppleDouble
@@ -11,10 +8,6 @@
 
 # Thumbnails
 ._*
-
-
-# Compiled Nim binaries
-*
 
 # Build artifacts
 nimcache/
@@ -26,4 +19,3 @@ nimcache*/
 *.so
 *.dll
 *.dylib
-

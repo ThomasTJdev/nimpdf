@@ -1,1 +1,29 @@
+# Compiled binaries
 *.exe
+*
+*
+
+# macOS system files
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Thumbnails
+._*
+
+# Generated PDF files in demo directory
+demo/*.pdf
+
+# Compiled Nim binaries
+*
+
+# Build artifacts
+nimcache/
+nimcache*/
+*.o
+*.obj
+*.a
+*.lib
+*.so
+*.dll
+*.dylib

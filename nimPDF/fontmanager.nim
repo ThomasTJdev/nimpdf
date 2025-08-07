@@ -208,8 +208,9 @@ proc EscapeStringAndEmbedFullFont*(f: TTFont, text: string): string =
       result.add("0000") # Missing glyph
 
 method EscapeString*(f: TTFont, text: string, renderMode: FontRenderMode = frmDefault): string =
-  let shouldEmbed = (renderMode == frmEmbed) or (f.renderMode == frmEmbed)
-  if shouldEmbed:
+  # Use the explicit renderMode parameter if provided, otherwise fall back to font's default
+  let effectiveRenderMode = if renderMode != frmDefault: renderMode else: f.renderMode
+  if effectiveRenderMode == frmEmbed:
     return f.EscapeStringAndEmbedFullFont(text)
 
   # Original logic for non-embedded fonts: build character-to-glyph mapping

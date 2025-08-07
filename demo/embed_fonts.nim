@@ -25,9 +25,9 @@ proc createPDF(doc: PDF) =
   doc.setFont("Calligrapher", {FS_REGULAR}, 10, ENC_STANDARD, renderMode = frmEmbed)
   doc.drawText(15, 30, "Calligrapher - renderMode=frmEmbed")
 
-  # Example 2: Font without individual embedding
+  # Example 2: Font without embedding (standard text rendering)
   doc.setFont("Eunjin", {FS_REGULAR}, 10, ENC_STANDARD, renderMode = frmDefault)
-  doc.drawText(15, 50, "Eunjin - renderMode=frmDefault")
+  doc.drawText(15, 50, "Eunjin - renderMode=frmDefault (no embedding)")
 
   # Example 3: Path rendering (text drawn as vector paths)
   doc.setFont("Eunjin", {FS_REGULAR}, 10, ENC_STANDARD, renderMode = frmPathRendering)
@@ -59,7 +59,7 @@ proc main(): bool {.discardable.} =
     opts.addFontsPath("fonts")
 
     echo "Creating PDF with font rendering modes demonstration..."
-    echo "- frmDefault: Standard text rendering"
+    echo "- frmDefault: No embedding, standard text rendering"
     echo "- frmEmbed: Text rendering with font embedding"
     echo "- frmPathRendering: Text drawn as vector paths (not selectable)"
     echo "- Check text copying/pasting to verify different behaviors"

@@ -26,7 +26,7 @@ proc createPDF(doc: PDF) =
   doc.setFont("Eunjin", {FS_REGULAR}, 10, ENC_UTF8, renderMode = frmEmbed)
   doc.drawText(15, 50, "헬로우 월드")
 
-  doc.setFont("KaiTi", {FS_REGULAR}, 10, ENC_UTF8)
+  doc.setFont("KaiTi", {FS_REGULAR}, 10, ENC_UTF8, renderMode = frmEmbed)
   doc.drawText(15, 70, "你好世界")
 
   doc.setFont("Calligrapher", {FS_REGULAR}, 10)

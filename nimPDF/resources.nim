@@ -88,9 +88,6 @@ proc putTrueTypeFonts(xref: Pdfxref, font: Font, seed: int, renderMode: FontRend
   let Length1  = buf.len
   let psName   = subsetTag & desc.postscriptName
 
-  var fontFile = xref.newDictStream(buf)
-  fontFile.addNumber("Length1", Length1)
-
   var descriptor = newDictObj()
   xref.add(descriptor)
   descriptor.addName("Type", "FontDescriptor")
@@ -104,7 +101,12 @@ proc putTrueTypeFonts(xref: Pdfxref, font: Font, seed: int, renderMode: FontRend
   descriptor.addNumber("CapHeight", desc.capHeight)
   descriptor.addNumber("StemV", desc.stemV)
   descriptor.addNumber("XHeight", desc.xHeight)
-  descriptor.addElement("FontFile2", fontFile)
+  
+  # Only embed font data when renderMode is frmEmbed
+  if renderMode == frmEmbed:
+    var fontFile = xref.newDictStream(buf)
+    fontFile.addNumber("Length1", Length1)
+    descriptor.addElement("FontFile2", fontFile)
 
   # CIDFontType2
   # A CIDFont whose glyph descriptions are based on TrueType font technology
@@ -117,6 +119,8 @@ proc putTrueTypeFonts(xref: Pdfxref, font: Font, seed: int, renderMode: FontRend
   descendant.addElement("FontDescriptor", descriptor)
   descendant.addNumber("DW", desc.missingWidth)
   descendant.addPlain("W", widths)
+  if renderMode == frmEmbed:
+    descendant.addName("CIDToGIDMap", "Identity")
 
   # ToUnicode
   let toUni1 = """/CIDInit /ProcSet findresource begin
@@ -130,12 +134,13 @@ begincmap
 <0000> <FFFF>
 endcodespacerange"""
 
-  let toUni2 = """\x0Aendcmap
+  let toUni2 = """
+endcmap
 CMapName currentdict /CMap defineresource pop
 end
 end"""
 
-  let toUni = toUni1 & ranges & toUni2
+  let toUni = if ranges.len > 0: toUni1 & "\n" & ranges & toUni2 else: toUni1 & toUni2
   var toUnicode = xref.newDictStream(toUni)
 
   var fn = newDictObj()
@@ -161,8 +166,8 @@ proc putFonts*(xref: Pdfxref, fonts: seq[Font]): DictObj =
   var fn: DictObj
 
   for fon in fonts:
-    if fon.renderMode == frmPathRendering: continue
     if fon.subType == FT_BASE14: fn = xref.putBase14Fonts(fon)
-    if fon.subType == FT_TRUETYPE: fn = xref.putTrueTypeFonts(fon, seed, fon.renderMode)
+    if fon.subType == FT_TRUETYPE: 
+      fn = xref.putTrueTypeFonts(fon, seed, fon.renderMode)
     result.addElement("F" & $fon.ID, fn)
     inc(seed)

@@ -989,7 +989,8 @@ proc drawText*(self: ContentBase, x, y: float64, text: string) =
 
   if font.subType == FT_TRUETYPE:
     var utf8 = replace_invalid(text)
-    self.put("BT /F", $font.ID, " ", f2s(self.state.gState.fontSize), " Tf ", f2s(xx), " ", f2s(yy), " Td <", font.EscapeString(utf8, font.renderMode), "> Tj ET")
+    # Use the font's actual renderMode for EscapeString
+    self.put("BT /F", $font.ID, " ", f2s(self.state.gState.fontSize), " Tf ", f2s(xx), " ", f2s(yy), " Td <", font.EscapeString(utf8), "> Tj ET")
   else:
     self.put("BT /F", $font.ID, " ", f2s(self.state.gState.fontSize), " Tf ", f2s(xx), " ", f2s(yy), " Td (", escapeString(text), ") Tj ET")
 
@@ -1006,7 +1007,7 @@ proc drawVText*(self: ContentBase; x,y: float64; text: string) =
   var xx = self.fromUser(x)
   var yy = self.state.vPoint(y)
   let utf8 = replace_invalid(text)
-  let cid = font.EscapeString(utf8, frmDefault)
+  let cid = font.EscapeString(utf8)
 
   self.put("BT")
   self.put("/F", $font.ID, " ", f2s(self.state.gState.fontSize), " Tf")
@@ -1050,7 +1051,7 @@ proc showText*(self: ContentBase, text:string) =
 
   if font.subType == FT_TRUETYPE:
     var utf8 = replace_invalid(text)
-    self.put("<",font.EscapeString(utf8, frmDefault),"> Tj")
+    self.put("<",font.EscapeString(utf8),"> Tj")
   else:
     self.put("(",escapeString(text),") Tj")
 

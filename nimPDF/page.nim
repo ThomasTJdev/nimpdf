@@ -456,9 +456,16 @@ proc newDocState*(opts: PDFOptions): DocState =
   result.setInfo(DI_PRODUCER, "nimPDF")
   result.setFontCount = 0
 
-proc makeFont*(doc: DocState, family: string, style: FontStyles, enc: EncodingType = ENC_STANDARD, embedFont: bool = false): Font =
-  let finalEmbedFont = doc.opts.getEmbedFont() or embedFont
-  result = doc.fontMan.makeFont(family, style, enc, finalEmbedFont)
+proc makeFont*(doc: DocState, family: string, style: FontStyles, enc: EncodingType = ENC_STANDARD, renderMode: FontRenderMode = frmDefault): Font =
+  let finalRenderMode = case renderMode:
+    of frmPathRendering: 
+      frmPathRendering  # Always honor explicit path rendering
+    of frmEmbed: 
+      frmEmbed          # Always honor explicit embedding  
+    of frmDefault: 
+      frmDefault  # Use default rendering (no global embedding option)
+  
+  result = doc.fontMan.makeFont(family, style, enc, finalRenderMode)
 
 proc getOpt*(doc: DocState): PDFOptions =
   result = doc.opts
@@ -703,9 +710,9 @@ proc setFont*(
     style: FontStyles,
     size: float64,
     enc: EncodingType = ENC_STANDARD,
-    embedFont: bool = false,
+    renderMode: FontRenderMode = frmDefault,
 ) =
-  var font = self.state.makeFont(family, style, enc, embedFont)
+  var font = self.state.makeFont(family, style, enc, renderMode)
   let fontSize = self.fromUser(size)
 
   self.state.gState.font = font
@@ -713,9 +720,9 @@ proc setFont*(
   inc(self.state.setFontCount)
 
 proc setFont*(
-    self: ContentBase, family: string, size: float64 = 5.0, embedFont: bool = false
+    self: ContentBase, family: string, size: float64 = 5.0, renderMode: FontRenderMode = frmDefault
 ) =
-  self.setFont(family, {FS_REGULAR}, size, ENC_STANDARD, embedFont)
+  self.setFont(family, {FS_REGULAR}, size, ENC_STANDARD, renderMode)
 
 proc parseGlyphOutline(glyphTable: GLYPHTable, glyphIndex: int): GlyphOutline =
   # Parse TrueType glyph outline data into vector paths
@@ -976,24 +983,16 @@ proc drawText*(self: ContentBase, x, y: float64, text: string) =
 
   var font = self.state.gState.font
   
-  if not font.embedFont and font.subType == FT_TRUETYPE:
+  if font.renderMode == frmPathRendering and font.subType == FT_TRUETYPE:
     self.drawTextAsPaths(x, y, text)
     return
 
   if font.subType == FT_TRUETYPE:
     var utf8 = replace_invalid(text)
-    let escapedString = font.EscapeString(utf8, false)
-    let pdfContent =
-      "BT /F" & $font.ID & " " & f2s(self.state.gState.fontSize) & " Tf " & f2s(xx) & " " &
-      f2s(yy) & " Td <" & escapedString & "> Tj ET"
-
-    self.put(pdfContent)
+    # Use the font's actual renderMode for EscapeString
+    self.put("BT /F", $font.ID, " ", f2s(self.state.gState.fontSize), " Tf ", f2s(xx), " ", f2s(yy), " Td <", font.EscapeString(utf8), "> Tj ET")
   else:
-    let pdfContent =
-      "BT /F" & $font.ID & " " & f2s(self.state.gState.fontSize) & " Tf " & f2s(xx) & " " &
-      f2s(yy) & " Td (" & escapeString(text) & ") Tj ET"
-
-    self.put(pdfContent)
+    self.put("BT /F", $font.ID, " ", f2s(self.state.gState.fontSize), " Tf ", f2s(xx), " ", f2s(yy), " Td (", escapeString(text), ") Tj ET")
 
 proc drawVText*(self: ContentBase; x,y: float64; text: string) =
   if self.state.gState.font == nil or self.state.setFontCount == 0:
@@ -1008,7 +1007,7 @@ proc drawVText*(self: ContentBase; x,y: float64; text: string) =
   var xx = self.fromUser(x)
   var yy = self.state.vPoint(y)
   let utf8 = replace_invalid(text)
-  let cid = font.EscapeString(utf8, self.state.opts.getEmbedFont())
+  let cid = font.EscapeString(utf8)
 
   self.put("BT")
   self.put("/F", $font.ID, " ", f2s(self.state.gState.fontSize), " Tf")
@@ -1052,7 +1051,7 @@ proc showText*(self: ContentBase, text:string) =
 
   if font.subType == FT_TRUETYPE:
     var utf8 = replace_invalid(text)
-    self.put("<",font.EscapeString(utf8, self.state.opts.getEmbedFont()),"> Tj")
+    self.put("<",font.EscapeString(utf8),"> Tj")
   else:
     self.put("(",escapeString(text),") Tj")
 

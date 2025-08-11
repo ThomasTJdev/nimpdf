@@ -40,6 +40,11 @@ proc createPDF(doc: PDF) =
   doc.setFillColor(0, 0, 0)  # Set black color for text
   doc.setFont("Times", {FS_REGULAR}, 10, ENC_STANDARD, renderMode = frmEmbed)
   doc.drawText(15, 120, "Times (Base14 ignores flag)")
+
+  # Example 5: FreeMono with renderMode=frmDefault
+  doc.setFillColor(0, 0, 0)  # Set black color for text
+  doc.setFont("FreeMono", {FS_REGULAR}, 10, ENC_UTF8, renderMode = frmDefault)
+  doc.drawText(15, 150, "FreeMono - The Quick Brown Fox Jump Over The Lazy Dog")
   
 
   doc.setInfo(DI_TITLE, "Font Rendering Modes Demo")

@@ -1,4 +1,4 @@
-﻿# Copyright (c) 2015-2020 Andri Lim
+# Copyright (c) 2015-2020 Andri Lim
 #
 # Distributed under the MIT license
 # (See accompanying file LICENSE.txt)
@@ -166,14 +166,14 @@ proc setFont*(
     style: FontStyles,
     size: float64,
     enc: EncodingType = ENC_STANDARD,
-    embedFont: bool = false,
+    renderMode: FontRenderMode = frmDefault,
 ) =
   assert(doc.curPage != nil)
-  doc.curPage.setFont(family, style, size, enc, embedFont)
+  doc.curPage.setFont(family, style, size, enc, renderMode)
 
-proc setFont*(doc: PDF, family: string, size: float64 = 5.0, embedFont: bool = false) =
+proc setFont*(doc: PDF, family: string, size: float64 = 5.0, renderMode: FontRenderMode = frmDefault) =
   assert(doc.curPage != nil)
-  doc.curPage.setFont(family, size, embedFont)
+  doc.curPage.setFont(family, size, renderMode)
 
 
 

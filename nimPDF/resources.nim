@@ -77,19 +77,16 @@ proc putBase14Fonts(xref: Pdfxref, font: Font): DictObj =
     elif fon.encoding == ENC_WINANSI: fn.addName("Encoding", "WinAnsiEncoding")
   result = fn
 
-proc putTrueTypeFonts(xref: Pdfxref, font: Font, seed: int, embedFont: bool): DictObj =
+proc putTrueTypeFonts(xref: Pdfxref, font: Font, seed: int, renderMode: FontRenderMode): DictObj =
   let fon = TTFont(font)
   let subsetTag  = makeSubsetTag(seed)
 
-  let widths   = fon.GenerateWidths(embedFont) #don't change this order
+  let widths   = fon.GenerateWidths(renderMode) #don't change this order
   let ranges   = fon.GenerateRanges() #cos they sort CH2GID differently
   let desc     = fon.GetDescriptor()
-  let buf      = fon.GetSubsetBuffer(subsetTag, embedFont)
+  let buf      = fon.GetSubsetBuffer(subsetTag, renderMode)
   let Length1  = buf.len
   let psName   = subsetTag & desc.postscriptName
-
-  var fontFile = xref.newDictStream(buf)
-  fontFile.addNumber("Length1", Length1)
 
   var descriptor = newDictObj()
   xref.add(descriptor)
@@ -104,7 +101,12 @@ proc putTrueTypeFonts(xref: Pdfxref, font: Font, seed: int, embedFont: bool): Di
   descriptor.addNumber("CapHeight", desc.capHeight)
   descriptor.addNumber("StemV", desc.stemV)
   descriptor.addNumber("XHeight", desc.xHeight)
-  descriptor.addElement("FontFile2", fontFile)
+  
+  # Only embed font data when renderMode is frmEmbed
+  if renderMode == frmEmbed:
+    var fontFile = xref.newDictStream(buf)
+    fontFile.addNumber("Length1", Length1)
+    descriptor.addElement("FontFile2", fontFile)
 
   # CIDFontType2
   # A CIDFont whose glyph descriptions are based on TrueType font technology
@@ -117,6 +119,8 @@ proc putTrueTypeFonts(xref: Pdfxref, font: Font, seed: int, embedFont: bool): Di
   descendant.addElement("FontDescriptor", descriptor)
   descendant.addNumber("DW", desc.missingWidth)
   descendant.addPlain("W", widths)
+  if renderMode == frmEmbed:
+    descendant.addName("CIDToGIDMap", "Identity")
 
   # ToUnicode
   let toUni1 = """/CIDInit /ProcSet findresource begin
@@ -130,12 +134,13 @@ begincmap
 <0000> <FFFF>
 endcodespacerange"""
 
-  let toUni2 = """\x0Aendcmap
+  let toUni2 = """
+endcmap
 CMapName currentdict /CMap defineresource pop
 end
 end"""
 
-  let toUni = toUni1 & ranges & toUni2
+  let toUni = if ranges.len > 0: toUni1 & "\n" & ranges & toUni2 else: toUni1 & toUni2
   var toUnicode = xref.newDictStream(toUni)
 
   var fn = newDictObj()
@@ -162,6 +167,7 @@ proc putFonts*(xref: Pdfxref, fonts: seq[Font]): DictObj =
 
   for fon in fonts:
     if fon.subType == FT_BASE14: fn = xref.putBase14Fonts(fon)
-    if fon.subType == FT_TRUETYPE: fn = xref.putTrueTypeFonts(fon, seed, fon.embedFont)
+    if fon.subType == FT_TRUETYPE: 
+      fn = xref.putTrueTypeFonts(fon, seed, fon.renderMode)
     result.addElement("F" & $fon.ID, fn)
     inc(seed)

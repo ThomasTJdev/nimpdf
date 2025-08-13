@@ -1,8 +1,4 @@
-import
-  std/[streams, strutils],
-  nimPDF,
-  unittest
-
+import streams, nimPDF, unittest, strutils
 proc draw_title(doc: PDF, text:string) =
   let size = getSizeFromName("A4")
 
@@ -46,48 +42,48 @@ proc test(doc: PDF) =
     var tw = doc.getTextWidth(text)
     var th = doc.getTextHeight(text)
     check:
-      tw.formatFloat(ffDecimal, 2) == "11.39"
-      th.formatFloat(ffDecimal, 2) == "3.59"
+      $tw == "11.39"
+      $th == "3.59"
 
   test "getTextWidth and GetTextHeight TTF":
     doc.setFont("FreeMono", {FS_REGULAR}, 5)
     var tw = doc.getTextWidth(text)
     var th = doc.getTextHeight(text)
     check:
-      tw.formatFloat(ffDecimal, 2) == "15.00"
-      th.formatFloat(ffDecimal, 2) == "3.02"
+      $tw.formatFloat(ffDecimal, 2) == "15.00"
+      $th.formatFloat(ffDecimal, 2) == "3.02"
 
   test "getVTextWidth and GetVTextHeight base14":
     doc.setFont("Helvetica", {FS_REGULAR}, 5)
     var tw = doc.getVTextWidth(text)
     var th = doc.getVTextHeight(text)
     check:
-      tw.formatFloat(ffDecimal, 2) == "3.61"
-      th.formatFloat(ffDecimal, 2) == "14.05"
+      $tw.formatFloat(ffDecimal, 2) == "3.61"
+      $th.formatFloat(ffDecimal, 2) == "14.05"
 
   test "getTextWidth and GetTextHeight TTF":
     doc.setFont("FreeMono", {FS_REGULAR}, 5)
     var tw = doc.getVTextWidth(text)
     var th = doc.getVTextHeight(text)
     check:
-      tw.formatFloat(ffDecimal, 2) == "3.00"
-      th.formatFloat(ffDecimal, 3) == "13.325"
+      $tw.formatFloat(ffDecimal, 2) == "3.00"
+      $th.formatFloat(ffDecimal, 3) == "13.325"
 
-proc main() =
+proc main(): bool {.discardable.} =
+  #echo currentSourcePath()
   var fileName = "test.pdf"
   var file = newFileStream(fileName, fmWrite)
 
   if file != nil:
-    var opts = newPDFOptions()
-    opts.addFontsPath("fonts")
-    var doc = newPDF(opts)
+    var doc = newPDF()
     doc.createPDF()
     doc.writePDF(file)
     doc.test()
     file.close()
     echo "OK"
-    return
+    return true
 
   echo "cannot open: ", fileName
+  result = false
 
 main()
